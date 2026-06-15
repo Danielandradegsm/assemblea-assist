@@ -14,16 +14,406 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      clientes: {
+        Row: {
+          cep: string | null
+          cidade: string | null
+          cpf_cnpj: string | null
+          created_at: string
+          created_by: string | null
+          data_nascimento: string | null
+          email: string | null
+          endereco: string | null
+          estado: string | null
+          id: string
+          nome: string
+          observacoes: string | null
+          rg: string | null
+          telefone: string | null
+          updated_at: string
+          whatsapp: string | null
+        }
+        Insert: {
+          cep?: string | null
+          cidade?: string | null
+          cpf_cnpj?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_nascimento?: string | null
+          email?: string | null
+          endereco?: string | null
+          estado?: string | null
+          id?: string
+          nome: string
+          observacoes?: string | null
+          rg?: string | null
+          telefone?: string | null
+          updated_at?: string
+          whatsapp?: string | null
+        }
+        Update: {
+          cep?: string | null
+          cidade?: string | null
+          cpf_cnpj?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_nascimento?: string | null
+          email?: string | null
+          endereco?: string | null
+          estado?: string | null
+          id?: string
+          nome?: string
+          observacoes?: string | null
+          rg?: string | null
+          telefone?: string | null
+          updated_at?: string
+          whatsapp?: string | null
+        }
+        Relationships: []
+      }
+      comissoes: {
+        Row: {
+          cota_id: string
+          created_at: string
+          data_pagamento: string | null
+          id: string
+          observacoes: string | null
+          primeira_parcela: number | null
+          segunda_parcela: number | null
+          status_pagamento: Database["public"]["Enums"]["comissao_status"]
+          terceira_parcela: number | null
+          total: number | null
+          updated_at: string
+          vendedor_id: string | null
+        }
+        Insert: {
+          cota_id: string
+          created_at?: string
+          data_pagamento?: string | null
+          id?: string
+          observacoes?: string | null
+          primeira_parcela?: number | null
+          segunda_parcela?: number | null
+          status_pagamento?: Database["public"]["Enums"]["comissao_status"]
+          terceira_parcela?: number | null
+          total?: number | null
+          updated_at?: string
+          vendedor_id?: string | null
+        }
+        Update: {
+          cota_id?: string
+          created_at?: string
+          data_pagamento?: string | null
+          id?: string
+          observacoes?: string | null
+          primeira_parcela?: number | null
+          segunda_parcela?: number | null
+          status_pagamento?: Database["public"]["Enums"]["comissao_status"]
+          terceira_parcela?: number | null
+          total?: number | null
+          updated_at?: string
+          vendedor_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comissoes_cota_id_fkey"
+            columns: ["cota_id"]
+            isOneToOne: false
+            referencedRelation: "cotas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comissoes_vendedor_id_fkey"
+            columns: ["vendedor_id"]
+            isOneToOne: false
+            referencedRelation: "vendedores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cotas: {
+        Row: {
+          assembleia: string | null
+          cliente_id: string | null
+          contemplada: boolean
+          cota: string | null
+          created_at: string
+          data_adesao: string | null
+          data_contemplacao: string | null
+          grupo: string | null
+          id: string
+          observacoes: string | null
+          proposta: string | null
+          qtd_parcelas: number | null
+          status: Database["public"]["Enums"]["cota_status"]
+          updated_at: string
+          valor_credito: number | null
+          valor_parcela: number | null
+          vencimento: number | null
+          vendedor_id: string | null
+        }
+        Insert: {
+          assembleia?: string | null
+          cliente_id?: string | null
+          contemplada?: boolean
+          cota?: string | null
+          created_at?: string
+          data_adesao?: string | null
+          data_contemplacao?: string | null
+          grupo?: string | null
+          id?: string
+          observacoes?: string | null
+          proposta?: string | null
+          qtd_parcelas?: number | null
+          status?: Database["public"]["Enums"]["cota_status"]
+          updated_at?: string
+          valor_credito?: number | null
+          valor_parcela?: number | null
+          vencimento?: number | null
+          vendedor_id?: string | null
+        }
+        Update: {
+          assembleia?: string | null
+          cliente_id?: string | null
+          contemplada?: boolean
+          cota?: string | null
+          created_at?: string
+          data_adesao?: string | null
+          data_contemplacao?: string | null
+          grupo?: string | null
+          id?: string
+          observacoes?: string | null
+          proposta?: string | null
+          qtd_parcelas?: number | null
+          status?: Database["public"]["Enums"]["cota_status"]
+          updated_at?: string
+          valor_credito?: number | null
+          valor_parcela?: number | null
+          vencimento?: number | null
+          vendedor_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cotas_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cotas_vendedor_id_fkey"
+            columns: ["vendedor_id"]
+            isOneToOne: false
+            referencedRelation: "vendedores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      import_logs: {
+        Row: {
+          arquivo: string | null
+          created_at: string
+          detalhes: Json | null
+          erros: number | null
+          id: string
+          linhas_processadas: number | null
+          registros_atualizados: number | null
+          registros_criados: number | null
+          usuario_id: string | null
+        }
+        Insert: {
+          arquivo?: string | null
+          created_at?: string
+          detalhes?: Json | null
+          erros?: number | null
+          id?: string
+          linhas_processadas?: number | null
+          registros_atualizados?: number | null
+          registros_criados?: number | null
+          usuario_id?: string | null
+        }
+        Update: {
+          arquivo?: string | null
+          created_at?: string
+          detalhes?: Json | null
+          erros?: number | null
+          id?: string
+          linhas_processadas?: number | null
+          registros_atualizados?: number | null
+          registros_criados?: number | null
+          usuario_id?: string | null
+        }
+        Relationships: []
+      }
+      parcelas: {
+        Row: {
+          cota_id: string
+          created_at: string
+          data_pagamento: string | null
+          id: string
+          numero: number
+          observacoes: string | null
+          status: Database["public"]["Enums"]["parcela_status"]
+          updated_at: string
+          valor: number | null
+          vencimento: string | null
+        }
+        Insert: {
+          cota_id: string
+          created_at?: string
+          data_pagamento?: string | null
+          id?: string
+          numero: number
+          observacoes?: string | null
+          status?: Database["public"]["Enums"]["parcela_status"]
+          updated_at?: string
+          valor?: number | null
+          vencimento?: string | null
+        }
+        Update: {
+          cota_id?: string
+          created_at?: string
+          data_pagamento?: string | null
+          id?: string
+          numero?: number
+          observacoes?: string | null
+          status?: Database["public"]["Enums"]["parcela_status"]
+          updated_at?: string
+          valor?: number | null
+          vencimento?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parcelas_cota_id_fkey"
+            columns: ["cota_id"]
+            isOneToOne: false
+            referencedRelation: "cotas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          email: string
+          id: string
+          nome: string
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          email: string
+          id: string
+          nome?: string
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          nome?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      vendedores: {
+        Row: {
+          ativo: boolean
+          cargo: string | null
+          cpf: string | null
+          created_at: string
+          email: string | null
+          id: string
+          meta_mensal: number | null
+          nome: string
+          percentual_comissao: number | null
+          telefone: string | null
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          cargo?: string | null
+          cpf?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          meta_mensal?: number | null
+          nome: string
+          percentual_comissao?: number | null
+          telefone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          cargo?: string | null
+          cpf?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          meta_mensal?: number | null
+          nome?: string
+          percentual_comissao?: number | null
+          telefone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_any_role: {
+        Args: {
+          _roles: Database["public"]["Enums"]["app_role"][]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "gerente" | "vendedor" | "consulta"
+      comissao_status: "pendente" | "parcial" | "paga" | "cancelada"
+      cota_status:
+        | "ativa"
+        | "aguardando_pagamento"
+        | "aguardando_estorno"
+        | "finalizada"
+        | "estorno_realizado"
+        | "contemplada"
+        | "cancelada"
+      parcela_status: "paga" | "em_aberto" | "atrasada" | "cancelada"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +540,19 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "gerente", "vendedor", "consulta"],
+      comissao_status: ["pendente", "parcial", "paga", "cancelada"],
+      cota_status: [
+        "ativa",
+        "aguardando_pagamento",
+        "aguardando_estorno",
+        "finalizada",
+        "estorno_realizado",
+        "contemplada",
+        "cancelada",
+      ],
+      parcela_status: ["paga", "em_aberto", "atrasada", "cancelada"],
+    },
   },
 } as const
