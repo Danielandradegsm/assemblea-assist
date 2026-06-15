@@ -86,13 +86,25 @@ function ClientesPage() {
   const save = useMutation({
     mutationFn: async () => {
       const parsed = schema.parse(form);
-      const payload: Record<string, unknown> = {};
-      for (const [k, v] of Object.entries(parsed)) payload[k] = v === "" ? null : v;
+      const payload = {
+        nome: parsed.nome,
+        cpf_cnpj: parsed.cpf_cnpj || null,
+        rg: parsed.rg || null,
+        data_nascimento: parsed.data_nascimento || null,
+        telefone: parsed.telefone || null,
+        whatsapp: parsed.whatsapp || null,
+        email: parsed.email || null,
+        endereco: parsed.endereco || null,
+        cep: parsed.cep || null,
+        cidade: parsed.cidade || null,
+        estado: parsed.estado || null,
+        observacoes: parsed.observacoes || null,
+      };
       if (editing) {
         const { error } = await supabase.from("clientes").update(payload).eq("id", editing.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("clientes").insert(payload as never);
+        const { error } = await supabase.from("clientes").insert(payload);
         if (error) throw error;
       }
     },
