@@ -35,13 +35,13 @@ const mainItems = [
 ];
 
 const opItems = [
-  { title: "Cotas", url: "/cotas", icon: FileSpreadsheet, disabled: true },
-  { title: "Parcelas", url: "/parcelas", icon: Receipt, disabled: true },
-  { title: "Comissões", url: "/comissoes", icon: TrendingUp, disabled: true },
+  { title: "Cotas", url: "/cotas", icon: FileSpreadsheet },
+  { title: "Parcelas", url: "/parcelas", icon: Receipt },
+  { title: "Comissões", url: "/comissoes", icon: TrendingUp },
 ];
 
 const toolItems = [
-  { title: "Importar Excel", url: "/importar", icon: Upload, disabled: true },
+  { title: "Importar Excel", url: "/importar", icon: Upload },
   { title: "Relatórios", url: "/relatorios", icon: FileBarChart, disabled: true },
 ];
 
@@ -100,14 +100,11 @@ export function AppSidebar() {
             <SidebarMenu>
               {opItems.map((i) => (
                 <SidebarMenuItem key={i.url}>
-                  <SidebarMenuButton disabled className="opacity-60 cursor-not-allowed">
-                    <i.icon className="h-4 w-4" />
-                    {!collapsed && (
-                      <span className="flex-1 flex items-center justify-between">
-                        {i.title}
-                        <span className="text-[9px] uppercase tracking-wide text-sidebar-foreground/50">em breve</span>
-                      </span>
-                    )}
+                  <SidebarMenuButton asChild isActive={isActive(i.url)}>
+                    <Link to={i.url} className="flex items-center gap-2">
+                      <i.icon className="h-4 w-4" />
+                      {!collapsed && <span>{i.title}</span>}
+                    </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
@@ -121,15 +118,24 @@ export function AppSidebar() {
             <SidebarMenu>
               {toolItems.map((i) => (
                 <SidebarMenuItem key={i.url}>
-                  <SidebarMenuButton disabled className="opacity-60 cursor-not-allowed">
-                    <i.icon className="h-4 w-4" />
-                    {!collapsed && (
-                      <span className="flex-1 flex items-center justify-between">
-                        {i.title}
-                        <span className="text-[9px] uppercase tracking-wide text-sidebar-foreground/50">em breve</span>
-                      </span>
-                    )}
-                  </SidebarMenuButton>
+                  {i.disabled ? (
+                    <SidebarMenuButton disabled className="opacity-60 cursor-not-allowed">
+                      <i.icon className="h-4 w-4" />
+                      {!collapsed && (
+                        <span className="flex-1 flex items-center justify-between">
+                          {i.title}
+                          <span className="text-[9px] uppercase tracking-wide text-sidebar-foreground/50">em breve</span>
+                        </span>
+                      )}
+                    </SidebarMenuButton>
+                  ) : (
+                    <SidebarMenuButton asChild isActive={isActive(i.url)}>
+                      <Link to={i.url} className="flex items-center gap-2">
+                        <i.icon className="h-4 w-4" />
+                        {!collapsed && <span>{i.title}</span>}
+                      </Link>
+                    </SidebarMenuButton>
+                  )}
                 </SidebarMenuItem>
               ))}
               {isAdmin && (
