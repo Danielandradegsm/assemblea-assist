@@ -35,13 +35,13 @@ const mainItems = [
 ];
 
 const opItems = [
-  { title: "Cotas", url: "/cotas", icon: FileSpreadsheet, disabled: true },
-  { title: "Parcelas", url: "/parcelas", icon: Receipt, disabled: true },
-  { title: "Comissões", url: "/comissoes", icon: TrendingUp, disabled: true },
+  { title: "Cotas", url: "/cotas", icon: FileSpreadsheet },
+  { title: "Parcelas", url: "/parcelas", icon: Receipt },
+  { title: "Comissões", url: "/comissoes", icon: TrendingUp },
 ];
 
 const toolItems = [
-  { title: "Importar Excel", url: "/importar", icon: Upload, disabled: true },
+  { title: "Importar Excel", url: "/importar", icon: Upload },
   { title: "Relatórios", url: "/relatorios", icon: FileBarChart, disabled: true },
 ];
 
