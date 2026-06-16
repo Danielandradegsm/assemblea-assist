@@ -14,7 +14,11 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedVendedoresRouteImport } from './routes/_authenticated/vendedores'
 import { Route as AuthenticatedUsuariosRouteImport } from './routes/_authenticated/usuarios'
+import { Route as AuthenticatedParcelasRouteImport } from './routes/_authenticated/parcelas'
+import { Route as AuthenticatedImportarRouteImport } from './routes/_authenticated/importar'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedCotasRouteImport } from './routes/_authenticated/cotas'
+import { Route as AuthenticatedComissoesRouteImport } from './routes/_authenticated/comissoes'
 import { Route as AuthenticatedClientesRouteImport } from './routes/_authenticated/clientes'
 
 const AuthRoute = AuthRouteImport.update({
@@ -41,9 +45,29 @@ const AuthenticatedUsuariosRoute = AuthenticatedUsuariosRouteImport.update({
   path: '/usuarios',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedParcelasRoute = AuthenticatedParcelasRouteImport.update({
+  id: '/parcelas',
+  path: '/parcelas',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedImportarRoute = AuthenticatedImportarRouteImport.update({
+  id: '/importar',
+  path: '/importar',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedCotasRoute = AuthenticatedCotasRouteImport.update({
+  id: '/cotas',
+  path: '/cotas',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedComissoesRoute = AuthenticatedComissoesRouteImport.update({
+  id: '/comissoes',
+  path: '/comissoes',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedClientesRoute = AuthenticatedClientesRouteImport.update({
@@ -56,7 +80,11 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/clientes': typeof AuthenticatedClientesRoute
+  '/comissoes': typeof AuthenticatedComissoesRoute
+  '/cotas': typeof AuthenticatedCotasRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/importar': typeof AuthenticatedImportarRoute
+  '/parcelas': typeof AuthenticatedParcelasRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/vendedores': typeof AuthenticatedVendedoresRoute
 }
@@ -64,7 +92,11 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/clientes': typeof AuthenticatedClientesRoute
+  '/comissoes': typeof AuthenticatedComissoesRoute
+  '/cotas': typeof AuthenticatedCotasRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/importar': typeof AuthenticatedImportarRoute
+  '/parcelas': typeof AuthenticatedParcelasRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/vendedores': typeof AuthenticatedVendedoresRoute
 }
@@ -74,7 +106,11 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/_authenticated/clientes': typeof AuthenticatedClientesRoute
+  '/_authenticated/comissoes': typeof AuthenticatedComissoesRoute
+  '/_authenticated/cotas': typeof AuthenticatedCotasRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/importar': typeof AuthenticatedImportarRoute
+  '/_authenticated/parcelas': typeof AuthenticatedParcelasRoute
   '/_authenticated/usuarios': typeof AuthenticatedUsuariosRoute
   '/_authenticated/vendedores': typeof AuthenticatedVendedoresRoute
 }
@@ -84,18 +120,36 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/clientes'
+    | '/comissoes'
+    | '/cotas'
     | '/dashboard'
+    | '/importar'
+    | '/parcelas'
     | '/usuarios'
     | '/vendedores'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/clientes' | '/dashboard' | '/usuarios' | '/vendedores'
+  to:
+    | '/'
+    | '/auth'
+    | '/clientes'
+    | '/comissoes'
+    | '/cotas'
+    | '/dashboard'
+    | '/importar'
+    | '/parcelas'
+    | '/usuarios'
+    | '/vendedores'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/auth'
     | '/_authenticated/clientes'
+    | '/_authenticated/comissoes'
+    | '/_authenticated/cotas'
     | '/_authenticated/dashboard'
+    | '/_authenticated/importar'
+    | '/_authenticated/parcelas'
     | '/_authenticated/usuarios'
     | '/_authenticated/vendedores'
   fileRoutesById: FileRoutesById
@@ -143,11 +197,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedUsuariosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/parcelas': {
+      id: '/_authenticated/parcelas'
+      path: '/parcelas'
+      fullPath: '/parcelas'
+      preLoaderRoute: typeof AuthenticatedParcelasRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/importar': {
+      id: '/_authenticated/importar'
+      path: '/importar'
+      fullPath: '/importar'
+      preLoaderRoute: typeof AuthenticatedImportarRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/dashboard': {
       id: '/_authenticated/dashboard'
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/cotas': {
+      id: '/_authenticated/cotas'
+      path: '/cotas'
+      fullPath: '/cotas'
+      preLoaderRoute: typeof AuthenticatedCotasRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/comissoes': {
+      id: '/_authenticated/comissoes'
+      path: '/comissoes'
+      fullPath: '/comissoes'
+      preLoaderRoute: typeof AuthenticatedComissoesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/clientes': {
@@ -162,14 +244,22 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedClientesRoute: typeof AuthenticatedClientesRoute
+  AuthenticatedComissoesRoute: typeof AuthenticatedComissoesRoute
+  AuthenticatedCotasRoute: typeof AuthenticatedCotasRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedImportarRoute: typeof AuthenticatedImportarRoute
+  AuthenticatedParcelasRoute: typeof AuthenticatedParcelasRoute
   AuthenticatedUsuariosRoute: typeof AuthenticatedUsuariosRoute
   AuthenticatedVendedoresRoute: typeof AuthenticatedVendedoresRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedClientesRoute: AuthenticatedClientesRoute,
+  AuthenticatedComissoesRoute: AuthenticatedComissoesRoute,
+  AuthenticatedCotasRoute: AuthenticatedCotasRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedImportarRoute: AuthenticatedImportarRoute,
+  AuthenticatedParcelasRoute: AuthenticatedParcelasRoute,
   AuthenticatedUsuariosRoute: AuthenticatedUsuariosRoute,
   AuthenticatedVendedoresRoute: AuthenticatedVendedoresRoute,
 }
