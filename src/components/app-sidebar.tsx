@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/sidebar";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth, ROLE_LABELS } from "@/lib/use-auth";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 const mainItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
@@ -42,7 +43,7 @@ const opItems = [
 
 const toolItems = [
   { title: "Importar Excel", url: "/importar", icon: Upload },
-  { title: "Relatórios", url: "/relatorios", icon: FileBarChart, disabled: true },
+  { title: "Relatórios", url: "/relatorios", icon: FileBarChart },
 ];
 
 export function AppSidebar() {
