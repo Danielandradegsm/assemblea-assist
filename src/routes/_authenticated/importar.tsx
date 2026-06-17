@@ -70,40 +70,90 @@ function normalizeCpf(v: unknown): string {
   return toStr(v).replace(/\D/g, "");
 }
 
+function normHeader(s: unknown): string {
+  return String(s ?? "")
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+}
+
+function buildColMap(headerRow: unknown[]): Record<string, number> {
+  const map: Record<string, number> = {};
+  const set = (k: string, i: number) => { if (map[k] === undefined) map[k] = i; };
+  headerRow.forEach((h, i) => {
+    const n = normHeader(h);
+    if (!n) return;
+    if (n.includes("processo")) set("processo", i);
+    else if (n.includes("data baixa") || n.includes("baixa credline")) set("data_baixa", i);
+    else if (n.includes("assembleia")) set("assembleia", i);
+    else if (n === "cliente" || n.startsWith("cliente ")) set("cliente", i);
+    else if (n.includes("cpf")) set("cpf", i);
+    else if (n === "grupo") set("grupo", i);
+    else if (n === "cota") set("cota", i);
+    else if (n === "venc" || n.startsWith("venc ")) set("vencimento", i);
+    else if (n === "vendedor") set("vendedor", i);
+    else if (n.includes("valor carta") || n === "valor") set("valor", i);
+    else if (n.includes("comissao vendedor") || n === "comissao") set("comissao", i);
+    else if (n.includes("telefone")) set("telefone", i);
+    else if (n.includes("dt nasc") || n.includes("nascimento")) set("nascimento", i);
+    else if (n === "cep" || n.startsWith("cep ")) set("cep", i);
+    else if (n.includes("situacao")) set("situacao", i);
+    else if (n === "1 parcela" || n.includes("1 parcela")) set("p1", i);
+    else if (n === "2 parcela" || n.includes("2 parcela")) set("p2", i);
+    else if (n === "3 parcela" || n.includes("3 parcela")) set("p3", i);
+    else if (n === "4 parcela" || n.includes("4 parcela")) set("p4", i);
+    else if (n === "5 parcela" || n.includes("5 parcela")) set("p5", i);
+    else if (n.includes("contemplacao")) set("contemplacao", i);
+  });
+  return map;
+}
+
 function parseSheet(ws: XLSX.WorkSheet): Parsed[] {
   const rows = XLSX.utils.sheet_to_json<unknown[]>(ws, { header: 1, defval: null });
+  // Detect header row in first 5 rows: must contain "cliente" and "cpf"
+  let hi = -1;
+  for (let i = 0; i < Math.min(5, rows.length); i++) {
+    const norm = (rows[i] ?? []).map(normHeader);
+    if (norm.some((x) => x === "cliente") && norm.some((x) => x.includes("cpf"))) {
+      hi = i; break;
+    }
+  }
+  if (hi < 0) return [];
+  const col = buildColMap(rows[hi] ?? []);
+  const get = (r: unknown[], key: string) => (col[key] !== undefined ? r[col[key]] : null);
+
   const out: Parsed[] = [];
-  for (let i = 2; i < rows.length; i++) {
+  for (let i = hi + 1; i < rows.length; i++) {
     const r = rows[i] ?? [];
-    const nome = toStr(r[3]);
-    const cpf = normalizeCpf(r[4]);
+    const nome = toStr(get(r, "cliente"));
+    const cpf = normalizeCpf(get(r, "cpf"));
     if (!nome && !cpf) continue;
-    const situacao = toStr(r[14]).toLowerCase();
-    const contempl = toStr(r[19]);
+    const situacao = toStr(get(r, "situacao")).toLowerCase();
+    const contempl = toStr(get(r, "contemplacao"));
     const parcelas = [
-      { numero: 1, data: toDate(r[15]) },
-      { numero: 3, data: toDate(r[16]) },
-      { numero: 4, data: toDate(r[17]) },
-      { numero: 5, data: toDate(r[18]) },
+      { numero: 1, data: toDate(get(r, "p1")) },
+      { numero: 2, data: toDate(get(r, "p2")) },
+      { numero: 3, data: toDate(get(r, "p3")) },
+      { numero: 4, data: toDate(get(r, "p4")) },
+      { numero: 5, data: toDate(get(r, "p5")) },
     ].filter((p) => p.data);
     out.push({
       cliente_nome: nome || "(sem nome)",
       cpf_cnpj: cpf,
-      vendedor_nome: toStr(r[8]).toUpperCase(),
-      grupo: toStr(r[5]),
-      cota: toStr(r[6]),
-      proposta: toStr(r[0]),
-      data_adesao: toDate(r[1]),
-      assembleia: toDate(r[2]),
-      vencimento: toNum(r[7]),
-      valor_credito: toNum(r[9]),
-      comissao_total: toNum(r[10]),
-      telefone: toStr(r[11]),
-      nascimento: toDate(r[12]),
-      cep: toStr(r[13]),
+      vendedor_nome: toStr(get(r, "vendedor")).toUpperCase(),
+      grupo: toStr(get(r, "grupo")),
+      cota: toStr(get(r, "cota")),
+      proposta: toStr(get(r, "processo")),
+      data_adesao: toDate(get(r, "data_baixa")),
+      assembleia: toDate(get(r, "assembleia")),
+      vencimento: toNum(get(r, "vencimento")),
+      valor_credito: toNum(get(r, "valor")),
+      comissao_total: toNum(get(r, "comissao")),
+      telefone: toStr(get(r, "telefone")),
+      nascimento: toDate(get(r, "nascimento")),
+      cep: toStr(get(r, "cep")),
       situacao,
       contemplada: /contempl/i.test(contempl) || /contempl/i.test(situacao),
-      data_contemplacao: toDate(r[19]),
+      data_contemplacao: toDate(get(r, "contemplacao")),
       parcelas,
     });
   }
