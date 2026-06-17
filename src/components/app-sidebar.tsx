@@ -154,6 +154,9 @@ export function AppSidebar() {
           )}
           <SidebarMenu>
             <SidebarMenuItem>
+              <ThemeToggle collapsed={collapsed} />
+            </SidebarMenuItem>
+            <SidebarMenuItem>
               <SidebarMenuButton onClick={handleSignOut} className="text-sidebar-foreground hover:bg-sidebar-accent">
                 <LogOut className="h-4 w-4" />
                 {!collapsed && <span>Sair</span>}
