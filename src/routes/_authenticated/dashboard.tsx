@@ -1,6 +1,19 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Users, FileSpreadsheet, DollarSign, TrendingUp, Trophy, AlertTriangle } from "lucide-react";
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
+} from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { fmtBRL, fmtNumber } from "@/lib/format";
 import { Card } from "@/components/ui/card";
@@ -9,17 +22,55 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
   component: Dashboard,
 });
 
+const PIE_COLORS = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--chart-4)", "var(--chart-5)"];
+
 async function loadStats() {
-  const [clientes, cotas, cotasAgg, comissoes, contemplados, parcelasAtrasadas] = await Promise.all([
+  const [clientes, cotas, cotasAll, comissoes, contemplados, parcelasAtrasadas, vendedores, parcelasStatus] = await Promise.all([
     supabase.from("clientes").select("id", { count: "exact", head: true }),
     supabase.from("cotas").select("id", { count: "exact", head: true }),
-    supabase.from("cotas").select("valor_credito"),
-    supabase.from("comissoes").select("total"),
+    supabase.from("cotas").select("valor_credito,data_adesao,vendedor_id,status"),
+    supabase.from("comissoes").select("total,vendedor_id"),
     supabase.from("cotas").select("id", { count: "exact", head: true }).eq("contemplada", true),
     supabase.from("parcelas").select("cota_id", { count: "exact", head: true }).eq("status", "atrasada"),
+    supabase.from("vendedores").select("id,nome"),
+    supabase.from("parcelas").select("status"),
   ]);
-  const totalVendido = (cotasAgg.data ?? []).reduce((a, r) => a + Number(r.valor_credito ?? 0), 0);
+
+  const vendMap = new Map<string, string>((vendedores.data ?? []).map((v) => [v.id, v.nome]));
+  const totalVendido = (cotasAll.data ?? []).reduce((a, r) => a + Number(r.valor_credito ?? 0), 0);
   const totalComissoes = (comissoes.data ?? []).reduce((a, r) => a + Number(r.total ?? 0), 0);
+
+  // Vendas por mês (últimos 12)
+  const byMonth = new Map<string, number>();
+  for (const r of cotasAll.data ?? []) {
+    if (!r.data_adesao) continue;
+    const d = new Date(r.data_adesao);
+    const k = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+    byMonth.set(k, (byMonth.get(k) ?? 0) + Number(r.valor_credito ?? 0));
+  }
+  const vendasMes = Array.from(byMonth.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .slice(-12)
+    .map(([k, v]) => ({ mes: k.slice(2).replace("-", "/"), total: Math.round(v) }));
+
+  // Comissões por vendedor (top 8)
+  const byVend = new Map<string, number>();
+  for (const r of comissoes.data ?? []) {
+    if (!r.vendedor_id) continue;
+    byVend.set(r.vendedor_id, (byVend.get(r.vendedor_id) ?? 0) + Number(r.total ?? 0));
+  }
+  const comissoesVend = Array.from(byVend.entries())
+    .map(([id, total]) => ({ vendedor: vendMap.get(id) ?? "—", total: Math.round(total) }))
+    .sort((a, b) => b.total - a.total)
+    .slice(0, 8);
+
+  // Status parcelas
+  const stMap = new Map<string, number>();
+  for (const r of parcelasStatus.data ?? []) {
+    stMap.set(r.status, (stMap.get(r.status) ?? 0) + 1);
+  }
+  const statusParcelas = Array.from(stMap.entries()).map(([name, value]) => ({ name, value }));
+
   return {
     clientes: clientes.count ?? 0,
     cotas: cotas.count ?? 0,
@@ -27,6 +78,9 @@ async function loadStats() {
     totalComissoes,
     contemplados: contemplados.count ?? 0,
     inadimplentes: parcelasAtrasadas.count ?? 0,
+    vendasMes,
+    comissoesVend,
+    statusParcelas,
   };
 }
 
@@ -54,7 +108,12 @@ function Kpi({ icon: Icon, label, value, tone = "primary" }: { icon: React.Eleme
 
 function Dashboard() {
   const { data, isLoading } = useQuery({ queryKey: ["dashboard-stats"], queryFn: loadStats });
-  const s = data ?? { clientes: 0, cotas: 0, totalVendido: 0, totalComissoes: 0, contemplados: 0, inadimplentes: 0 };
+  const s = data ?? {
+    clientes: 0, cotas: 0, totalVendido: 0, totalComissoes: 0, contemplados: 0, inadimplentes: 0,
+    vendasMes: [] as { mes: string; total: number }[],
+    comissoesVend: [] as { vendedor: string; total: number }[],
+    statusParcelas: [] as { name: string; value: number }[],
+  };
 
   return (
     <div className="space-y-6 max-w-7xl">
@@ -72,15 +131,62 @@ function Dashboard() {
         <Kpi icon={AlertTriangle} label="Inadimplentes" value={fmtNumber(s.inadimplentes)} tone="destructive" />
       </div>
 
-      <Card className="p-6">
-        <h2 className="text-base font-semibold mb-2">Próximas etapas</h2>
-        <p className="text-sm text-muted-foreground">
-          Esta é a Fase 1 do <strong>Ceolin Consórcios</strong>: fundação, autenticação, dashboard e cadastros de
-          Clientes e Vendedores. As próximas fases incluirão Cotas, Parcelas, Comissões, Importação de Excel mensal,
-          Relatórios em PDF/Excel e Gráficos interativos.
-        </p>
-        {isLoading && <p className="text-xs text-muted-foreground mt-3">Atualizando indicadores…</p>}
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card className="p-5">
+          <h2 className="text-sm font-semibold mb-3">Vendas por mês (R$)</h2>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={s.vendasMes} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                <XAxis dataKey="mes" stroke="var(--muted-foreground)" fontSize={11} />
+                <YAxis stroke="var(--muted-foreground)" fontSize={11} tickFormatter={(v) => Intl.NumberFormat("pt-BR", { notation: "compact" }).format(v as number)} />
+                <Tooltip
+                  contentStyle={{ background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12 }}
+                  formatter={(v: number) => fmtBRL(v)}
+                />
+                <Bar dataKey="total" fill="var(--chart-1)" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </Card>
+
+        <Card className="p-5">
+          <h2 className="text-sm font-semibold mb-3">Top vendedores · comissões (R$)</h2>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={s.comissoesVend} layout="vertical" margin={{ top: 8, right: 16, bottom: 0, left: 8 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                <XAxis type="number" stroke="var(--muted-foreground)" fontSize={11} tickFormatter={(v) => Intl.NumberFormat("pt-BR", { notation: "compact" }).format(v as number)} />
+                <YAxis type="category" dataKey="vendedor" stroke="var(--muted-foreground)" fontSize={11} width={90} />
+                <Tooltip
+                  contentStyle={{ background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12 }}
+                  formatter={(v: number) => fmtBRL(v)}
+                />
+                <Bar dataKey="total" fill="var(--chart-2)" radius={[0, 4, 4, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </Card>
+      </div>
+
+      <Card className="p-5">
+        <h2 className="text-sm font-semibold mb-3">Distribuição de parcelas</h2>
+        <div className="h-64">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie data={s.statusParcelas} dataKey="value" nameKey="name" innerRadius={50} outerRadius={90} paddingAngle={2}>
+                {s.statusParcelas.map((_, i) => (
+                  <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
+                ))}
+              </Pie>
+              <Legend wrapperStyle={{ fontSize: 12 }} />
+              <Tooltip contentStyle={{ background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12 }} />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
       </Card>
+
+      {isLoading && <p className="text-xs text-muted-foreground">Atualizando indicadores…</p>}
     </div>
   );
 }
