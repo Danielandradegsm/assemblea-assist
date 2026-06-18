@@ -270,7 +270,7 @@ function ImportarPage() {
             if (row.telefone) upd.telefone = row.telefone;
             if (row.nascimento && !existingCli.data_nascimento) upd.data_nascimento = row.nascimento;
             if (row.cep) upd.cep = row.cep;
-            if (Object.keys(upd).length) await supabase.from("clientes").update(upd).eq("id", clienteId);
+            if (Object.keys(upd).length) await supabase.from("clientes").update(upd as never).eq("id", clienteId);
           } else {
             const { data, error } = await supabase.from("clientes").insert({
               nome: row.cliente_nome,
