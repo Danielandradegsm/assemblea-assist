@@ -73,10 +73,12 @@ export type Database = {
       }
       comissoes: {
         Row: {
+          administradora: string | null
           cota_id: string
           created_at: string
           data_pagamento: string | null
           id: string
+          mes_referencia: string | null
           observacoes: string | null
           primeira_parcela: number | null
           segunda_parcela: number | null
@@ -87,10 +89,12 @@ export type Database = {
           vendedor_id: string | null
         }
         Insert: {
+          administradora?: string | null
           cota_id: string
           created_at?: string
           data_pagamento?: string | null
           id?: string
+          mes_referencia?: string | null
           observacoes?: string | null
           primeira_parcela?: number | null
           segunda_parcela?: number | null
@@ -101,10 +105,12 @@ export type Database = {
           vendedor_id?: string | null
         }
         Update: {
+          administradora?: string | null
           cota_id?: string
           created_at?: string
           data_pagamento?: string | null
           id?: string
+          mes_referencia?: string | null
           observacoes?: string | null
           primeira_parcela?: number | null
           segunda_parcela?: number | null
@@ -133,6 +139,7 @@ export type Database = {
       }
       cotas: {
         Row: {
+          administradora: string | null
           assembleia: string | null
           cliente_id: string | null
           contemplada: boolean
@@ -140,6 +147,8 @@ export type Database = {
           created_at: string
           data_adesao: string | null
           data_contemplacao: string | null
+          empresa: string | null
+          fdi_assinado: boolean
           grupo: string | null
           id: string
           observacoes: string | null
@@ -153,6 +162,7 @@ export type Database = {
           vendedor_id: string | null
         }
         Insert: {
+          administradora?: string | null
           assembleia?: string | null
           cliente_id?: string | null
           contemplada?: boolean
@@ -160,6 +170,8 @@ export type Database = {
           created_at?: string
           data_adesao?: string | null
           data_contemplacao?: string | null
+          empresa?: string | null
+          fdi_assinado?: boolean
           grupo?: string | null
           id?: string
           observacoes?: string | null
@@ -173,6 +185,7 @@ export type Database = {
           vendedor_id?: string | null
         }
         Update: {
+          administradora?: string | null
           assembleia?: string | null
           cliente_id?: string | null
           contemplada?: boolean
@@ -180,6 +193,8 @@ export type Database = {
           created_at?: string
           data_adesao?: string | null
           data_contemplacao?: string | null
+          empresa?: string | null
+          fdi_assinado?: boolean
           grupo?: string | null
           id?: string
           observacoes?: string | null
