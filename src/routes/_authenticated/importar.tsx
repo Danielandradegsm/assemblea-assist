@@ -82,26 +82,26 @@ function buildColMap(headerRow: unknown[]): Record<string, number> {
   headerRow.forEach((h, i) => {
     const n = normHeader(h);
     if (!n) return;
-    if (n.includes("processo")) set("processo", i);
-    else if (n.includes("data baixa") || n.includes("baixa credline")) set("data_baixa", i);
-    else if (n.includes("assembleia")) set("assembleia", i);
+    if (n.includes("processo") || n === "fdi" || n.includes("processo fdi")) set("processo", i);
+    else if (n.includes("data baixa") || n.includes("baixa credline") || n === "recebido") set("data_baixa", i);
+    else if (n.includes("assembleia") || n.includes("data assembleia")) set("assembleia", i);
     else if (n === "cliente" || n.startsWith("cliente ")) set("cliente", i);
     else if (n.includes("cpf")) set("cpf", i);
     else if (n === "grupo") set("grupo", i);
     else if (n === "cota") set("cota", i);
-    else if (n === "venc" || n.startsWith("venc ")) set("vencimento", i);
+    else if (n === "venc" || n.startsWith("venc ") || n === "vencimento") set("vencimento", i);
     else if (n === "vendedor") set("vendedor", i);
     else if (n.includes("valor carta") || n === "valor") set("valor", i);
-    else if (n.includes("comissao vendedor") || n === "comissao") set("comissao", i);
+    else if (n.includes("comissao vendedor") || n === "comissao" || n.includes("comissao 1")) set("comissao", i);
     else if (n.includes("telefone")) set("telefone", i);
     else if (n.includes("dt nasc") || n.includes("nascimento")) set("nascimento", i);
     else if (n === "cep" || n.startsWith("cep ")) set("cep", i);
     else if (n.includes("situacao")) set("situacao", i);
-    else if (n === "1 parcela" || n.includes("1 parcela")) set("p1", i);
-    else if (n === "2 parcela" || n.includes("2 parcela")) set("p2", i);
-    else if (n === "3 parcela" || n.includes("3 parcela")) set("p3", i);
-    else if (n === "4 parcela" || n.includes("4 parcela")) set("p4", i);
-    else if (n === "5 parcela" || n.includes("5 parcela")) set("p5", i);
+    else if (n.includes("1 parcela") || n.startsWith("1o parcela") || n.startsWith("1 o parcela")) set("p1", i);
+    else if (n.includes("2 parcela") || n.startsWith("2o parcela")) set("p2", i);
+    else if (n.includes("3 parcela") || n.startsWith("3o parcela")) set("p3", i);
+    else if (n.includes("4 parcela") || n.startsWith("4o parcela")) set("p4", i);
+    else if (n.includes("5 parcela") || n.startsWith("5o parcela")) set("p5", i);
     else if (n.includes("contemplacao")) set("contemplacao", i);
   });
   return map;
@@ -109,14 +109,15 @@ function buildColMap(headerRow: unknown[]): Record<string, number> {
 
 function parseSheet(ws: XLSX.WorkSheet): Parsed[] {
   const rows = XLSX.utils.sheet_to_json<unknown[]>(ws, { header: 1, defval: null });
-  // Detect header row in first 5 rows: must contain "cliente" and "cpf"
+  // Detect header row: scan up to first 15 rows for one containing "cliente" + "cpf"
   let hi = -1;
-  for (let i = 0; i < Math.min(5, rows.length); i++) {
+  for (let i = 0; i < Math.min(15, rows.length); i++) {
     const norm = (rows[i] ?? []).map(normHeader);
     if (norm.some((x) => x === "cliente") && norm.some((x) => x.includes("cpf"))) {
       hi = i; break;
     }
   }
+
   if (hi < 0) return [];
   const col = buildColMap(rows[hi] ?? []);
   const get = (r: unknown[], key: string) => (col[key] !== undefined ? r[col[key]] : null);
