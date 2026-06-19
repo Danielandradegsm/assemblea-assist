@@ -24,8 +24,18 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 
 const PIE_COLORS = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--chart-4)", "var(--chart-5)"];
 
+type MesTotal = { mes: string; itauCredito: number; tradicaoCredito: number; totalGeral: number; itauComissao: number; tradicaoComissao: number; totalComissao: number };
+
+const MES_ORDER = ["JANEIRO","FEVEREIRO","MARCO","MARÇO","ABRIL","MAIO","JUNHO","JULHO","AGOSTO","SETEMBRO","OUTUBRO","NOVEMBRO","DEZEMBRO"];
+function mesKey(mes: string): number {
+  const m = mes.toUpperCase().match(/([A-ZÇÃ]+)\s*(\d{4})/);
+  if (!m) return 0;
+  const idx = MES_ORDER.indexOf(m[1]);
+  return Number(m[2]) * 100 + (idx >= 0 ? idx : 99);
+}
+
 async function loadStats() {
-  const [clientes, cotas, cotasAll, comissoes, contemplados, parcelasAtrasadas, vendedores, parcelasStatus] = await Promise.all([
+  const [clientes, cotas, cotasAll, comissoes, contemplados, parcelasAtrasadas, vendedores, parcelasStatus, comissoesMes] = await Promise.all([
     supabase.from("clientes").select("id", { count: "exact", head: true }),
     supabase.from("cotas").select("id", { count: "exact", head: true }),
     supabase.from("cotas").select("valor_credito,data_adesao,vendedor_id,status"),
@@ -34,53 +44,11 @@ async function loadStats() {
     supabase.from("parcelas").select("cota_id", { count: "exact", head: true }).eq("status", "atrasada"),
     supabase.from("vendedores").select("id,nome"),
     supabase.from("parcelas").select("status"),
+    supabase.from("comissoes").select("total,mes_referencia,administradora,cota:cotas(valor_credito)"),
   ]);
-
-  const vendMap = new Map<string, string>((vendedores.data ?? []).map((v) => [v.id, v.nome]));
-  const totalVendido = (cotasAll.data ?? []).reduce((a, r) => a + Number(r.valor_credito ?? 0), 0);
-  const totalComissoes = (comissoes.data ?? []).reduce((a, r) => a + Number(r.total ?? 0), 0);
-
-  // Vendas por mês (últimos 12)
-  const byMonth = new Map<string, number>();
-  for (const r of cotasAll.data ?? []) {
-    if (!r.data_adesao) continue;
-    const d = new Date(r.data_adesao);
-    const k = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
-    byMonth.set(k, (byMonth.get(k) ?? 0) + Number(r.valor_credito ?? 0));
-  }
-  const vendasMes = Array.from(byMonth.entries())
-    .sort(([a], [b]) => a.localeCompare(b))
-    .slice(-12)
-    .map(([k, v]) => ({ mes: k.slice(2).replace("-", "/"), total: Math.round(v) }));
-
-  // Comissões por vendedor (top 8)
-  const byVend = new Map<string, number>();
-  for (const r of comissoes.data ?? []) {
-    if (!r.vendedor_id) continue;
-    byVend.set(r.vendedor_id, (byVend.get(r.vendedor_id) ?? 0) + Number(r.total ?? 0));
-  }
-  const comissoesVend = Array.from(byVend.entries())
-    .map(([id, total]) => ({ vendedor: vendMap.get(id) ?? "—", total: Math.round(total) }))
-    .sort((a, b) => b.total - a.total)
-    .slice(0, 8);
-
-  // Status parcelas
-  const stMap = new Map<string, number>();
-  for (const r of parcelasStatus.data ?? []) {
-    stMap.set(r.status, (stMap.get(r.status) ?? 0) + 1);
-  }
-  const statusParcelas = Array.from(stMap.entries()).map(([name, value]) => ({ name, value }));
-
-  return {
-    clientes: clientes.count ?? 0,
-    cotas: cotas.count ?? 0,
-    totalVendido,
-    totalComissoes,
-    contemplados: contemplados.count ?? 0,
-    inadimplentes: parcelasAtrasadas.count ?? 0,
-    vendasMes,
-    comissoesVend,
+...
     statusParcelas,
+    totaisMes,
   };
 }
 
