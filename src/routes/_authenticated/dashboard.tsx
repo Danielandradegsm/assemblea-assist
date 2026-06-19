@@ -46,7 +46,69 @@ async function loadStats() {
     supabase.from("parcelas").select("status"),
     supabase.from("comissoes").select("total,mes_referencia,administradora,cota:cotas(valor_credito)"),
   ]);
-...
+
+  const vendMap = new Map<string, string>((vendedores.data ?? []).map((v) => [v.id, v.nome]));
+  const totalVendido = (cotasAll.data ?? []).reduce((a, r) => a + Number(r.valor_credito ?? 0), 0);
+  const totalComissoes = (comissoes.data ?? []).reduce((a, r) => a + Number(r.total ?? 0), 0);
+
+  const byMonth = new Map<string, number>();
+  for (const r of cotasAll.data ?? []) {
+    if (!r.data_adesao) continue;
+    const d = new Date(r.data_adesao);
+    const k = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+    byMonth.set(k, (byMonth.get(k) ?? 0) + Number(r.valor_credito ?? 0));
+  }
+  const vendasMes = Array.from(byMonth.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .slice(-12)
+    .map(([k, v]) => ({ mes: k.slice(2).replace("-", "/"), total: Math.round(v) }));
+
+  const byVend = new Map<string, number>();
+  for (const r of comissoes.data ?? []) {
+    if (!r.vendedor_id) continue;
+    byVend.set(r.vendedor_id, (byVend.get(r.vendedor_id) ?? 0) + Number(r.total ?? 0));
+  }
+  const comissoesVend = Array.from(byVend.entries())
+    .map(([id, total]) => ({ vendedor: vendMap.get(id) ?? "—", total: Math.round(total) }))
+    .sort((a, b) => b.total - a.total)
+    .slice(0, 8);
+
+  const stMap = new Map<string, number>();
+  for (const r of parcelasStatus.data ?? []) {
+    stMap.set(r.status, (stMap.get(r.status) ?? 0) + 1);
+  }
+  const statusParcelas = Array.from(stMap.entries()).map(([name, value]) => ({ name, value }));
+
+  const mesMap = new Map<string, MesTotal>();
+  for (const r of (comissoesMes.data ?? []) as Array<{ total: number | null; mes_referencia: string | null; administradora: string | null; cota: { valor_credito: number | null } | null }>) {
+    const mes = r.mes_referencia;
+    if (!mes) continue;
+    const adm = (r.administradora ?? "").toUpperCase();
+    const credito = Number(r.cota?.valor_credito ?? 0);
+    const com = Number(r.total ?? 0);
+    const cur = mesMap.get(mes) ?? { mes, itauCredito: 0, tradicaoCredito: 0, totalGeral: 0, itauComissao: 0, tradicaoComissao: 0, totalComissao: 0 };
+    if (adm.includes("ITAU") || adm.includes("ITAÚ")) {
+      cur.itauCredito += credito;
+      cur.itauComissao += com;
+    } else if (adm.includes("TRADI")) {
+      cur.tradicaoCredito += credito;
+      cur.tradicaoComissao += com;
+    }
+    cur.totalGeral = cur.itauCredito + cur.tradicaoCredito;
+    cur.totalComissao = cur.itauComissao + cur.tradicaoComissao;
+    mesMap.set(mes, cur);
+  }
+  const totaisMes = Array.from(mesMap.values()).sort((a, b) => mesKey(b.mes) - mesKey(a.mes));
+
+  return {
+    clientes: clientes.count ?? 0,
+    cotas: cotas.count ?? 0,
+    totalVendido,
+    totalComissoes,
+    contemplados: contemplados.count ?? 0,
+    inadimplentes: parcelasAtrasadas.count ?? 0,
+    vendasMes,
+    comissoesVend,
     statusParcelas,
     totaisMes,
   };
