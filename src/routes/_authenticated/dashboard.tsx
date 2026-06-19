@@ -24,8 +24,18 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 
 const PIE_COLORS = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--chart-4)", "var(--chart-5)"];
 
+type MesTotal = { mes: string; itauCredito: number; tradicaoCredito: number; totalGeral: number; itauComissao: number; tradicaoComissao: number; totalComissao: number };
+
+const MES_ORDER = ["JANEIRO","FEVEREIRO","MARCO","MARÇO","ABRIL","MAIO","JUNHO","JULHO","AGOSTO","SETEMBRO","OUTUBRO","NOVEMBRO","DEZEMBRO"];
+function mesKey(mes: string): number {
+  const m = mes.toUpperCase().match(/([A-ZÇÃ]+)\s*(\d{4})/);
+  if (!m) return 0;
+  const idx = MES_ORDER.indexOf(m[1]);
+  return Number(m[2]) * 100 + (idx >= 0 ? idx : 99);
+}
+
 async function loadStats() {
-  const [clientes, cotas, cotasAll, comissoes, contemplados, parcelasAtrasadas, vendedores, parcelasStatus] = await Promise.all([
+  const [clientes, cotas, cotasAll, comissoes, contemplados, parcelasAtrasadas, vendedores, parcelasStatus, comissoesMes] = await Promise.all([
     supabase.from("clientes").select("id", { count: "exact", head: true }),
     supabase.from("cotas").select("id", { count: "exact", head: true }),
     supabase.from("cotas").select("valor_credito,data_adesao,vendedor_id,status"),
@@ -34,13 +44,13 @@ async function loadStats() {
     supabase.from("parcelas").select("cota_id", { count: "exact", head: true }).eq("status", "atrasada"),
     supabase.from("vendedores").select("id,nome"),
     supabase.from("parcelas").select("status"),
+    supabase.from("comissoes").select("total,mes_referencia,administradora,cota:cotas(valor_credito)"),
   ]);
 
   const vendMap = new Map<string, string>((vendedores.data ?? []).map((v) => [v.id, v.nome]));
   const totalVendido = (cotasAll.data ?? []).reduce((a, r) => a + Number(r.valor_credito ?? 0), 0);
   const totalComissoes = (comissoes.data ?? []).reduce((a, r) => a + Number(r.total ?? 0), 0);
 
-  // Vendas por mês (últimos 12)
   const byMonth = new Map<string, number>();
   for (const r of cotasAll.data ?? []) {
     if (!r.data_adesao) continue;
@@ -53,7 +63,6 @@ async function loadStats() {
     .slice(-12)
     .map(([k, v]) => ({ mes: k.slice(2).replace("-", "/"), total: Math.round(v) }));
 
-  // Comissões por vendedor (top 8)
   const byVend = new Map<string, number>();
   for (const r of comissoes.data ?? []) {
     if (!r.vendedor_id) continue;
@@ -64,12 +73,32 @@ async function loadStats() {
     .sort((a, b) => b.total - a.total)
     .slice(0, 8);
 
-  // Status parcelas
   const stMap = new Map<string, number>();
   for (const r of parcelasStatus.data ?? []) {
     stMap.set(r.status, (stMap.get(r.status) ?? 0) + 1);
   }
   const statusParcelas = Array.from(stMap.entries()).map(([name, value]) => ({ name, value }));
+
+  const mesMap = new Map<string, MesTotal>();
+  for (const r of (comissoesMes.data ?? []) as Array<{ total: number | null; mes_referencia: string | null; administradora: string | null; cota: { valor_credito: number | null } | null }>) {
+    const mes = r.mes_referencia;
+    if (!mes) continue;
+    const adm = (r.administradora ?? "").toUpperCase();
+    const credito = Number(r.cota?.valor_credito ?? 0);
+    const com = Number(r.total ?? 0);
+    const cur = mesMap.get(mes) ?? { mes, itauCredito: 0, tradicaoCredito: 0, totalGeral: 0, itauComissao: 0, tradicaoComissao: 0, totalComissao: 0 };
+    if (adm.includes("ITAU") || adm.includes("ITAÚ")) {
+      cur.itauCredito += credito;
+      cur.itauComissao += com;
+    } else if (adm.includes("TRADI")) {
+      cur.tradicaoCredito += credito;
+      cur.tradicaoComissao += com;
+    }
+    cur.totalGeral = cur.itauCredito + cur.tradicaoCredito;
+    cur.totalComissao = cur.itauComissao + cur.tradicaoComissao;
+    mesMap.set(mes, cur);
+  }
+  const totaisMes = Array.from(mesMap.values()).sort((a, b) => mesKey(b.mes) - mesKey(a.mes));
 
   return {
     clientes: clientes.count ?? 0,
@@ -81,6 +110,7 @@ async function loadStats() {
     vendasMes,
     comissoesVend,
     statusParcelas,
+    totaisMes,
   };
 }
 
@@ -113,6 +143,7 @@ function Dashboard() {
     vendasMes: [] as { mes: string; total: number }[],
     comissoesVend: [] as { vendedor: string; total: number }[],
     statusParcelas: [] as { name: string; value: number }[],
+    totaisMes: [] as MesTotal[],
   };
 
   return (
@@ -183,6 +214,59 @@ function Dashboard() {
               <Tooltip contentStyle={{ background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12 }} />
             </PieChart>
           </ResponsiveContainer>
+        </div>
+      </Card>
+
+      <Card className="p-5">
+        <h2 className="text-sm font-semibold mb-1">Totais por mês — ITAÚ × TRADIÇÃO</h2>
+        <p className="text-xs text-muted-foreground mb-3">Replica os totais do final de cada aba da planilha importada.</p>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="text-xs uppercase tracking-wider text-muted-foreground border-b border-border">
+              <tr>
+                <th className="text-left py-2 pr-3 font-medium">Mês</th>
+                <th className="text-right py-2 px-3 font-medium">ITAÚ (crédito)</th>
+                <th className="text-right py-2 px-3 font-medium">TRADIÇÃO (crédito)</th>
+                <th className="text-right py-2 px-3 font-medium bg-success/10">TOTAL GERAL</th>
+                <th className="text-right py-2 px-3 font-medium">ITAÚ (comissão)</th>
+                <th className="text-right py-2 px-3 font-medium">TRADIÇÃO (comissão)</th>
+                <th className="text-right py-2 pl-3 font-medium bg-success/10">TOTAL COMISSÃO</th>
+              </tr>
+            </thead>
+            <tbody className="tabular-nums">
+              {s.totaisMes.length === 0 && (
+                <tr><td colSpan={7} className="py-6 text-center text-muted-foreground">Nenhum dado importado ainda.</td></tr>
+              )}
+              {s.totaisMes.map((r) => (
+                <tr key={r.mes} className="border-b border-border/50 last:border-0">
+                  <td className="py-2 pr-3 font-medium">{r.mes}</td>
+                  <td className="py-2 px-3 text-right">{fmtBRL(r.itauCredito)}</td>
+                  <td className="py-2 px-3 text-right">{fmtBRL(r.tradicaoCredito)}</td>
+                  <td className="py-2 px-3 text-right font-semibold bg-success/5">{fmtBRL(r.totalGeral)}</td>
+                  <td className="py-2 px-3 text-right">{fmtBRL(r.itauComissao)}</td>
+                  <td className="py-2 px-3 text-right">{fmtBRL(r.tradicaoComissao)}</td>
+                  <td className="py-2 pl-3 text-right font-semibold bg-success/5">{fmtBRL(r.totalComissao)}</td>
+                </tr>
+              ))}
+              {s.totaisMes.length > 0 && (() => {
+                const t = s.totaisMes.reduce((a, r) => ({
+                  ic: a.ic + r.itauCredito, tc: a.tc + r.tradicaoCredito, tg: a.tg + r.totalGeral,
+                  ico: a.ico + r.itauComissao, tco: a.tco + r.tradicaoComissao, tcom: a.tcom + r.totalComissao,
+                }), { ic: 0, tc: 0, tg: 0, ico: 0, tco: 0, tcom: 0 });
+                return (
+                  <tr className="border-t-2 border-border font-semibold bg-muted/30">
+                    <td className="py-2 pr-3">Total</td>
+                    <td className="py-2 px-3 text-right">{fmtBRL(t.ic)}</td>
+                    <td className="py-2 px-3 text-right">{fmtBRL(t.tc)}</td>
+                    <td className="py-2 px-3 text-right bg-success/10">{fmtBRL(t.tg)}</td>
+                    <td className="py-2 px-3 text-right">{fmtBRL(t.ico)}</td>
+                    <td className="py-2 px-3 text-right">{fmtBRL(t.tco)}</td>
+                    <td className="py-2 pl-3 text-right bg-success/10">{fmtBRL(t.tcom)}</td>
+                  </tr>
+                );
+              })()}
+            </tbody>
+          </table>
         </div>
       </Card>
 
