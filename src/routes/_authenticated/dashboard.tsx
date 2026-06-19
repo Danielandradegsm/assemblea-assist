@@ -217,6 +217,59 @@ function Dashboard() {
         </div>
       </Card>
 
+      <Card className="p-5">
+        <h2 className="text-sm font-semibold mb-1">Totais por mês — ITAÚ × TRADIÇÃO</h2>
+        <p className="text-xs text-muted-foreground mb-3">Replica os totais do final de cada aba da planilha importada.</p>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="text-xs uppercase tracking-wider text-muted-foreground border-b border-border">
+              <tr>
+                <th className="text-left py-2 pr-3 font-medium">Mês</th>
+                <th className="text-right py-2 px-3 font-medium">ITAÚ (crédito)</th>
+                <th className="text-right py-2 px-3 font-medium">TRADIÇÃO (crédito)</th>
+                <th className="text-right py-2 px-3 font-medium bg-success/10">TOTAL GERAL</th>
+                <th className="text-right py-2 px-3 font-medium">ITAÚ (comissão)</th>
+                <th className="text-right py-2 px-3 font-medium">TRADIÇÃO (comissão)</th>
+                <th className="text-right py-2 pl-3 font-medium bg-success/10">TOTAL COMISSÃO</th>
+              </tr>
+            </thead>
+            <tbody className="tabular-nums">
+              {s.totaisMes.length === 0 && (
+                <tr><td colSpan={7} className="py-6 text-center text-muted-foreground">Nenhum dado importado ainda.</td></tr>
+              )}
+              {s.totaisMes.map((r) => (
+                <tr key={r.mes} className="border-b border-border/50 last:border-0">
+                  <td className="py-2 pr-3 font-medium">{r.mes}</td>
+                  <td className="py-2 px-3 text-right">{fmtBRL(r.itauCredito)}</td>
+                  <td className="py-2 px-3 text-right">{fmtBRL(r.tradicaoCredito)}</td>
+                  <td className="py-2 px-3 text-right font-semibold bg-success/5">{fmtBRL(r.totalGeral)}</td>
+                  <td className="py-2 px-3 text-right">{fmtBRL(r.itauComissao)}</td>
+                  <td className="py-2 px-3 text-right">{fmtBRL(r.tradicaoComissao)}</td>
+                  <td className="py-2 pl-3 text-right font-semibold bg-success/5">{fmtBRL(r.totalComissao)}</td>
+                </tr>
+              ))}
+              {s.totaisMes.length > 0 && (() => {
+                const t = s.totaisMes.reduce((a, r) => ({
+                  ic: a.ic + r.itauCredito, tc: a.tc + r.tradicaoCredito, tg: a.tg + r.totalGeral,
+                  ico: a.ico + r.itauComissao, tco: a.tco + r.tradicaoComissao, tcom: a.tcom + r.totalComissao,
+                }), { ic: 0, tc: 0, tg: 0, ico: 0, tco: 0, tcom: 0 });
+                return (
+                  <tr className="border-t-2 border-border font-semibold bg-muted/30">
+                    <td className="py-2 pr-3">Total</td>
+                    <td className="py-2 px-3 text-right">{fmtBRL(t.ic)}</td>
+                    <td className="py-2 px-3 text-right">{fmtBRL(t.tc)}</td>
+                    <td className="py-2 px-3 text-right bg-success/10">{fmtBRL(t.tg)}</td>
+                    <td className="py-2 px-3 text-right">{fmtBRL(t.ico)}</td>
+                    <td className="py-2 px-3 text-right">{fmtBRL(t.tco)}</td>
+                    <td className="py-2 pl-3 text-right bg-success/10">{fmtBRL(t.tcom)}</td>
+                  </tr>
+                );
+              })()}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+
       {isLoading && <p className="text-xs text-muted-foreground">Atualizando indicadores…</p>}
     </div>
   );
