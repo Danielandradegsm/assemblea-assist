@@ -143,6 +143,7 @@ function Dashboard() {
     vendasMes: [] as { mes: string; total: number }[],
     comissoesVend: [] as { vendedor: string; total: number }[],
     statusParcelas: [] as { name: string; value: number }[],
+    totaisMes: [] as MesTotal[],
   };
 
   return (
